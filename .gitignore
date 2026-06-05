@@ -1,0 +1,17 @@
+# MLflow
+mlflow.db
+mlflow/*.db
+
+# Terraform
+terraform/.terraform/
+terraform/*.tfstate
+terraform/*.tfstate.*
+terraform/.terraform.lock.hcl
+
+venv/
+__pycache__/
+*.pyc
+data/
+artifacts/
+mlruns/
+.env

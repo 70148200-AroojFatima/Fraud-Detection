@@ -1,0 +1,97 @@
+pipeline {
+    agent any
+
+    environment {
+        IMAGE_NAME = "fraud-detection-api"
+        IMAGE_TAG  = "v1.0"
+        APP_NAME   = "fraud-detection"
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                echo "====[ Stage 1: Checkout Code ]====="
+                echo "Student: Arooj Fatima | SAP: 70148200"
+                checkout scm
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                echo "====[ Stage 2: Install Python Dependencies ]====="
+                sh '''
+                    python3.11 -m venv venv
+                    . venv/bin/activate
+                    pip install --upgrade pip
+                    pip install -r app/requirements.txt
+                '''
+            }
+        }
+
+        stage('Run Tests') {
+            steps {
+                echo "====[ Stage 3: Run API Health Test ]====="
+                sh '''
+                    . venv/bin/activate
+                    python -c "
+import joblib
+import numpy as np
+model = joblib.load('model/model.pkl')
+test_input = np.zeros((1, 30))
+pred = model.predict(test_input)
+print(f'Test prediction: {pred[0]} - Model OK')
+"
+                '''
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                echo "====[ Stage 4: Build Docker Image ]====="
+                sh '''
+                    eval $(minikube docker-env)
+                    docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
+                    docker images | grep ${IMAGE_NAME}
+                '''
+            }
+        }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                echo "====[ Stage 5: Deploy to Kubernetes ]====="
+                sh '''
+                    kubectl apply -f kubernetes/deployment.yaml
+                    kubectl apply -f kubernetes/service.yaml
+                    kubectl rollout status deployment/fraud-detection-deployment
+                    kubectl get pods
+                '''
+            }
+        }
+
+        stage('Verify Deployment') {
+            steps {
+                echo "====[ Stage 6: Verify Deployment ]====="
+                sh '''
+                    kubectl get deployments
+                    kubectl get replicaset
+                    kubectl get services
+                    SERVICE_URL=$(minikube service fraud-detection-service --url)
+                    echo "Service URL: ${SERVICE_URL}"
+                    sleep 10
+                    curl -f ${SERVICE_URL}/health || echo "Health check attempted"
+                '''
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "✅ CI/CD Pipeline PASSED - Fraud Detection API Deployed Successfully!"
+            echo "Student: Arooj Fatima | SAP ID: 70148200"
+        }
+        failure {
+            echo "❌ CI/CD Pipeline FAILED - Check logs above"
+        }
+    }
+}

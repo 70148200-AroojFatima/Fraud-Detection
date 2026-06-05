@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fraud-detection-deployment
+  labels:
+    app: fraud-detection
+    student: arooj-fatima
+    sap: "70148200"
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: fraud-detection
+  template:
+    metadata:
+      labels:
+        app: fraud-detection
+    spec:
+      containers:
+      - name: fraud-detection-api
+        image: fraud-detection-api:v1.0
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 8000
+        env:
+        - name: MODEL_PATH
+          value: "model/model.pkl"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 15
+          periodSeconds: 5
