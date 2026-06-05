@@ -47,15 +47,13 @@ print(f'Test prediction: {pred[0]} - Model OK')
         }
 
         stage('Build Docker Image') {
-            steps {
-                echo "====[ Stage 4: Build Docker Image ]====="
-                sh '''
-                    eval $(minikube docker-env)
-                    docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
-                    docker images | grep ${IMAGE_NAME}
-                '''
-            }
-        }
+    steps {
+        echo "====[ Stage 4: Build Docker Image ]====="
+        sh '''
+            docker build -t fraud-detection-api:v1.0 .
+        '''
+    }
+}
 
         stage('Deploy to Kubernetes') {
             steps {
